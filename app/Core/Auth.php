@@ -29,11 +29,16 @@ final class Auth
             return false;
         }
 
+        if (($user['status'] ?? 'active') !== 'active') {
+            return false;
+        }
+
         if (!password_verify($password, $user['password_hash'])) {
             return false;
         }
 
         $_SESSION['user_id'] = (int) $user['id'];
+        session_regenerate_id(true);
         return true;
     }
 

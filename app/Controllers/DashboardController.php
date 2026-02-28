@@ -14,4 +14,10 @@ final class DashboardController extends Controller
         $user = Auth::user();
         view('dashboard/index', ['title' => 'Panel', 'user' => $user]);
     }
+
+    public function admin(): void
+    {
+        $user = Auth::user();
+        view('dashboard/admin', ['title' => 'Panel Admin', 'user' => $user]);
+    }
 }

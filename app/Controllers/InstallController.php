@@ -27,15 +27,20 @@ final class InstallController extends Controller
 
         verify_csrf();
 
-        $dbHost = trim($_POST['db_host'] ?? 'localhost');
-        $dbPort = trim($_POST['db_port'] ?? '3306');
-        $dbName = trim($_POST['db_name'] ?? '');
-        $dbUser = trim($_POST['db_user'] ?? '');
+        $dbHost = sanitize_input((string) ($_POST['db_host'] ?? 'localhost'));
+        $dbPort = sanitize_input((string) ($_POST['db_port'] ?? '3306'));
+        $dbName = sanitize_input((string) ($_POST['db_name'] ?? ''));
+        $dbUser = sanitize_input((string) ($_POST['db_user'] ?? ''));
         $dbPass = (string) ($_POST['db_pass'] ?? '');
-        $appUrl = rtrim(trim($_POST['app_url'] ?? ''), '/');
-        $adminName = trim($_POST['admin_name'] ?? 'Administrador');
-        $adminEmail = trim($_POST['admin_email'] ?? '');
+        $appUrl = rtrim(sanitize_input((string) ($_POST['app_url'] ?? '')), '/');
+        $adminName = sanitize_input((string) ($_POST['admin_name'] ?? 'Administrador'));
+        $adminEmail = sanitize_input((string) ($_POST['admin_email'] ?? ''));
         $adminPass = (string) ($_POST['admin_pass'] ?? '');
+
+        if (!filter_var($adminEmail, FILTER_VALIDATE_EMAIL) || strlen($adminPass) < 8 || !filter_var($appUrl, FILTER_VALIDATE_URL)) {
+            flash('error', 'Validación fallida. Verifique URL, email y contraseña (mínimo 8).');
+            redirect('/install');
+        }
 
         try {
             $pdo = new PDO("mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4", $dbUser, $dbPass, [
@@ -49,12 +54,13 @@ final class InstallController extends Controller
 
             $pdo->exec($sql);
 
-            $stmt = $pdo->prepare('INSERT INTO users (name,email,password_hash,role,created_at) VALUES (:name,:email,:password_hash,:role,NOW())');
+            $stmt = $pdo->prepare('INSERT INTO users (name,email,password_hash,role,status,created_at) VALUES (:name,:email,:password_hash,:role,:status,NOW())');
             $stmt->execute([
                 'name' => $adminName,
                 'email' => $adminEmail,
                 'password_hash' => password_hash($adminPass, PASSWORD_DEFAULT),
-                'role' => 'admin',
+                'role' => 'ADMIN',
+                'status' => 'active',
             ]);
 
             $env = "APP_NAME=Castro Romero Abogados\nAPP_URL={$appUrl}\nAPP_ENV=production\nDB_HOST={$dbHost}\nDB_PORT={$dbPort}\nDB_NAME={$dbName}\nDB_USER={$dbUser}\nDB_PASS={$dbPass}\n";

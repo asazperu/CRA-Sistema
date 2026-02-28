@@ -18,7 +18,17 @@ final class App
         self::$basePath = rtrim($basePath, '/');
 
         if (session_status() !== PHP_SESSION_ACTIVE) {
+            ini_set('session.cookie_httponly', '1');
+            ini_set('session.use_only_cookies', '1');
+            ini_set('session.cookie_samesite', 'Lax');
+            if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+                ini_set('session.cookie_secure', '1');
+            }
             session_start();
+            if (!isset($_SESSION['_initiated'])) {
+                session_regenerate_id(true);
+                $_SESSION['_initiated'] = true;
+            }
         }
 
         Config::load(self::$basePath);
@@ -43,17 +53,21 @@ final class App
             $path = str_replace('/install.php', '', $path) ?: '/';
         }
 
-        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
-        $router->get('/', [DashboardController::class, 'index'], true);
+        $router->get('/', [DashboardController::class, 'index'], ['auth']);
+
         $router->get('/login', [AuthController::class, 'showLogin']);
         $router->post('/login', [AuthController::class, 'login']);
-        $router->post('/logout', [AuthController::class, 'logout'], true);
+        $router->post('/logout', [AuthController::class, 'logout'], ['auth']);
+        $router->get('/password/change', [AuthController::class, 'showChangePassword'], ['auth']);
+        $router->post('/password/change', [AuthController::class, 'changePassword'], ['auth']);
 
-        $router->get('/chat', [ChatController::class, 'index'], true);
-        $router->post('/chat/new', [ChatController::class, 'create'], true);
-        $router->get('/chat/view', [ChatController::class, 'show'], true);
-        $router->post('/chat/message', [ChatController::class, 'storeMessage'], true);
+        $router->get('/chat', [ChatController::class, 'index'], ['auth']);
+        $router->post('/chat/new', [ChatController::class, 'create'], ['auth']);
+        $router->post('/chat/message', [ChatController::class, 'storeMessage'], ['auth']);
+
+        $router->get('/admin', [DashboardController::class, 'admin'], ['auth', 'role:ADMIN']);
 
         $router->get('/install', [InstallController::class, 'index']);
         $router->post('/install', [InstallController::class, 'store']);

@@ -90,6 +90,14 @@ if (!function_exists('verify_csrf')) {
     }
 }
 
+
+if (!function_exists('sanitize_input')) {
+    function sanitize_input(string $value): string
+    {
+        return trim(strip_tags($value));
+    }
+}
+
 if (!function_exists('e')) {
     function e(string $value): string
     {

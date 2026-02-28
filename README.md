@@ -1,30 +1,24 @@
-# Castro Romero Abogados (PHP MVC + MySQL)
+# Castro Romero Abogados (Base MVC PHP 8+)
 
-Sistema web estilo ChatGPT/Gemini orientado a abogados peruanos.
+Base funcional lista para HostGator/cPanel con:
+- Front controller (`public/index.php`) + rewrite (`.htaccess`)
+- Router liviano
+- PDO + prepared statements
+- Sesiones seguras + `password_hash()`
+- CSRF + validación server-side + sanitización XSS
+- Middleware `Auth` y `RoleGuard`
+- Login / logout / cambio de contraseña
+- Roles: `ADMIN` y `USER`
+- Instalador web (`install.php`) que importa `database.sql`, crea admin, escribe `.env` y genera `install.lock`
 
-## Stack
-- PHP 8+ con MVC real
-- MySQL/MariaDB (gestionado en phpMyAdmin)
-- HTML/CSS/JS
-- Compatible con HostGator/cPanel
+## Instalación
+1. Crear BD y usuario en cPanel/phpMyAdmin.
+2. Subir archivos al hosting.
+3. Apuntar dominio a `public/` (o dejar `.htaccess` raíz).
+4. Abrir `/install.php` y completar datos.
+5. Ingresar por `/login` con el admin creado.
 
-## Entregables solicitados
+## Estructura pedida
 - Árbol MVC: `documentos/01-arbol-mvc.md`
-- Mapa de rutas/endpoints: `documentos/02-mapa-rutas.md`
-- Esquema DB completo: `database.sql` + `documentos/03-esquema-mysql.md`
-
-## Instalación en HostGator/cPanel
-1. Crear base de datos y usuario desde **cPanel > MySQL Databases**.
-2. Subir el proyecto al hosting.
-3. Apuntar el dominio a `public/` (o usar `.htaccess` raíz).
-4. Abrir `https://tu-dominio.com/install.php`.
-5. Completar credenciales DB, URL y admin inicial.
-
-El instalador:
-- Importa `database.sql` sobre una base ya creada por el usuario.
-- Crea usuario administrador inicial.
-- Escribe `.env`.
-- Genera `install.lock` para bloquear reinstalación.
-
-## CLI útil
-- `php cli/install_check.php` -> valida presencia de `.env` e `install.lock`.
+- Mapa endpoints: `documentos/02-mapa-rutas.md`
+- Esquema MySQL: `database.sql` y `documentos/03-esquema-mysql.md`
