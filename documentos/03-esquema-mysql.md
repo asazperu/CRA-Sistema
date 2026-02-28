@@ -9,7 +9,7 @@ Archivo fuente: `database.sql`.
 - KB: `knowledge_categories`, `knowledge_articles`
 - Documentos: `documents`
 - Export: `exports`
-- Events: `events_outbox`
+- Events: `events`, `events_outbox`
 - Install: `install_runs`
 
 ## Relaciones clave
@@ -18,7 +18,9 @@ Archivo fuente: `database.sql`.
 - `users 1..N documents`
 - `conversations 1..N documents` (nullable)
 - `users 1..N exports`
+- `users 1..N events`
 - `conversations 1..N exports` (nullable)
+- `conversations 1..N events` (nullable)
 - `knowledge_categories 1..N knowledge_articles`
 - `users 1..N knowledge_articles`
 - `users 1..N audit_logs`

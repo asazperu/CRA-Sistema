@@ -14,6 +14,11 @@ Base funcional lista para subir a HostGator/cPanel.
 - Roles: `ADMIN` y `USER`.
 - Chat con OpenRouter (modo normal + streaming opcional).
 - Historial de chats (crear/renombrar/borrar).
+- Módulo Eventos con:
+  - creación de evento desde chat (modal),
+  - almacenamiento por usuario en `events`,
+  - vista de lista/calendario mensual,
+  - exportación opcional `.ics`.
 - Mensajes persistidos en MySQL y logs de uso en `api_usage_logs`.
 - Enriquecimiento previo a OpenRouter con documentos/chunks relevantes + banderas en `flags` y corrida en `analysis_runs`.
 - Panel ADMIN con marca, IA, CRUD de usuarios, `audit_logs` y consumo.

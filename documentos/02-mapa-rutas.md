@@ -45,6 +45,10 @@
 - `GET /export/reportes` *(planeado)*.
 
 ## Events
+- `GET /eventos` -> lista/calendario de eventos por usuario.
+- `POST /eventos/create` -> crear evento manual.
+- `GET /eventos/ics?id={id}` -> exportar evento a `.ics`.
+- `POST /chat/event/create` -> crear evento desde modal en chat.
 - `GET /events/stream` *(planeado - SSE)*.
 - `POST /events/webhook/audit` *(planeado)*.
 - `POST /events/webhook/import` *(planeado)*.

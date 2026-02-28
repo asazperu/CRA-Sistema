@@ -8,6 +8,7 @@ use App\Controllers\AuthController;
 use App\Controllers\ChatController;
 use App\Controllers\DashboardController;
 use App\Controllers\DocumentController;
+use App\Controllers\EventController;
 use App\Controllers\InstallController;
 
 final class App
@@ -72,12 +73,17 @@ final class App
         $router->post('/chat/message', [ChatController::class, 'storeMessage'], ['auth']);
         $router->post('/chat/rename', [ChatController::class, 'rename'], ['auth']);
         $router->post('/chat/delete', [ChatController::class, 'delete'], ['auth']);
+        $router->post('/chat/event/create', [ChatController::class, 'createEvent'], ['auth']);
 
         $router->get('/documentos', [DocumentController::class, 'index'], ['auth']);
         $router->post('/documentos/upload', [DocumentController::class, 'upload'], ['auth']);
         $router->get('/documentos/download', [DocumentController::class, 'download'], ['auth']);
         $router->post('/documentos/delete', [DocumentController::class, 'delete'], ['auth']);
         $router->post('/documentos/reprocess', [DocumentController::class, 'reprocess'], ['auth']);
+
+        $router->get('/eventos', [EventController::class, 'index'], ['auth']);
+        $router->post('/eventos/create', [EventController::class, 'create'], ['auth']);
+        $router->get('/eventos/ics', [EventController::class, 'downloadIcs'], ['auth']);
 
         $router->get('/admin', [DashboardController::class, 'admin'], ['auth', 'role:ADMIN']);
         $router->post('/admin/brand', [DashboardController::class, 'saveBrand'], ['auth', 'role:ADMIN']);

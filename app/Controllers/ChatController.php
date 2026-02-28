@@ -9,6 +9,7 @@ use App\Core\Controller;
 use App\Models\AnalysisRun;
 use App\Models\ApiUsageLog;
 use App\Models\Conversation;
+use App\Models\Event;
 use App\Models\Flag;
 use App\Models\Message;
 use App\Models\Setting;
@@ -81,6 +82,55 @@ final class ChatController extends Controller
         }
 
         redirect('/chat');
+    }
+
+    public function createEvent(): void
+    {
+        verify_csrf();
+        $user = Auth::user();
+        $conversationId = (int) ($_POST['conversation_id'] ?? 0);
+
+        $conversation = (new Conversation())->find($conversationId, (int) $user['id']);
+        if (!$conversation) {
+            flash('error', 'Conversación inválida para evento.');
+            redirect('/chat');
+        }
+
+        $title = mb_substr(sanitize_input((string) ($_POST['title'] ?? 'Evento legal')), 0, 180);
+        if ($title === '') {
+            $title = 'Evento legal';
+        }
+
+        $description = trim((string) ($_POST['description'] ?? ''));
+        $location = mb_substr(sanitize_input((string) ($_POST['location'] ?? '')), 0, 180);
+        $startsAtInput = (string) ($_POST['starts_at'] ?? '');
+        $endsAtInput = (string) ($_POST['ends_at'] ?? '');
+
+        $startsAt = \DateTimeImmutable::createFromFormat('Y-m-d\TH:i', $startsAtInput) ?: null;
+        $endsAt = \DateTimeImmutable::createFromFormat('Y-m-d\TH:i', $endsAtInput) ?: null;
+
+        if (!$startsAt || !$endsAt || $endsAt < $startsAt) {
+            flash('error', 'No se pudo crear el evento: fechas inválidas.');
+            redirect('/chat?id=' . $conversationId);
+        }
+
+        $eventId = (new Event())->create([
+            'user_id' => (int) $user['id'],
+            'conversation_id' => $conversationId,
+            'title' => $title,
+            'description' => $description,
+            'location' => $location,
+            'starts_at' => $startsAt->format('Y-m-d H:i:s'),
+            'ends_at' => $endsAt->format('Y-m-d H:i:s'),
+        ]);
+
+        flash('success', 'Evento creado correctamente.');
+
+        if (($_POST['download_ics'] ?? '0') === '1') {
+            redirect('/eventos/ics?id=' . $eventId);
+        }
+
+        redirect('/chat?id=' . $conversationId);
     }
 
     public function storeMessage(): void
