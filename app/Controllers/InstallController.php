@@ -77,6 +77,25 @@ final class InstallController extends Controller
                 'status' => 'active',
             ]);
 
+            $defaultSystemPrompt = "Eres un asistente legal para abogados peruanos.\n"
+                . "Responde únicamente sobre derecho peruano.\n"
+                . "Formato obligatorio:\n"
+                . "1) Resumen ejecutivo\n"
+                . "2) Base normativa\n"
+                . "3) Jurisprudencia/Criterios\n"
+                . "4) Aplicación al caso\n"
+                . "5) Riesgos\n"
+                . "6) Recomendaciones\n"
+                . "7) Checklist\n"
+                . "No inventes normas, artículos, sentencias o fuentes. Si falta información o no puedes verificar una cita, indícalo expresamente.\n"
+                . "Incluye siempre un disclaimer final indicando que es orientación general y no sustituye asesoría legal profesional.";
+
+            $settingsStmt = $pdo->prepare('INSERT INTO settings (setting_key, setting_value, updated_at) VALUES (:setting_key, :setting_value, NOW()) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = VALUES(updated_at)');
+            $settingsStmt->execute([
+                'setting_key' => 'openrouter_system_prompt',
+                'setting_value' => $defaultSystemPrompt,
+            ]);
+
             $env = "APP_NAME=Castro Romero Abogados\nAPP_URL={$input['app_url']}\nAPP_ENV=production\nDB_HOST={$input['db_host']}\nDB_PORT={$input['db_port']}\nDB_NAME={$input['db_name']}\nDB_USER={$input['db_user']}\nDB_PASS={$input['db_pass']}\nOPENROUTER_API_KEY=\nOPENROUTER_MODEL=openai/gpt-4o-mini\n";
             file_put_contents(base_path('.env'), $env);
             file_put_contents(base_path('install.lock'), 'installed:' . date('c'));

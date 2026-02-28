@@ -9,6 +9,7 @@ use App\Core\Controller;
 use App\Models\ApiUsageLog;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\Setting;
 use App\Services\OpenRouterService;
 
 final class ChatController extends Controller
@@ -94,9 +95,16 @@ final class ChatController extends Controller
         $messageModel->create($conversationId, 'user', $content);
 
         $historyRows = $messageModel->allByConversation($conversationId);
+        $systemPrompt = (new Setting())->get('openrouter_system_prompt',
+            "Eres un asistente legal para abogados peruanos. " .
+            "Responde únicamente sobre derecho peruano. " .
+            "Formato: Resumen ejecutivo, Base normativa, Jurisprudencia/Criterios, Aplicación, Riesgos, Recomendaciones, Checklist. " .
+            "No inventes citas; si falta información, indícalo. Incluye disclaimer final."
+        );
+
         $apiMessages = [[
             'role' => 'system',
-            'content' => 'Eres un asistente legal para abogados peruanos. Responde en español, claro y profesional. Incluye advertencia de orientación general cuando aplique.',
+            'content' => (string) $systemPrompt,
         ]];
 
         foreach ($historyRows as $row) {

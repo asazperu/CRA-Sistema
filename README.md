@@ -15,6 +15,7 @@ Base funcional lista para subir a HostGator/cPanel.
 - Chat con OpenRouter (modo normal + streaming opcional).
 - Historial de chats (crear/renombrar/borrar).
 - Mensajes persistidos en MySQL y logs de uso en `api_usage_logs`.
+- System prompt configurable por ADMIN (guardado en `settings`).
 
 ## Configuración OpenRouter
 Agrega en `.env` después de instalar:
@@ -44,3 +45,7 @@ OPENROUTER_MODEL=openai/gpt-4o-mini
 
 ## Importante
 La app **no crea físicamente la base de datos** en hosting; usa la que tú creas en cPanel/phpMyAdmin.
+
+## Prompt del agente (ADMIN)
+Desde `/admin` puedes editar el system prompt de OpenRouter.
+Se guarda en la tabla `settings` con la clave `openrouter_system_prompt`.
