@@ -69,6 +69,8 @@ final class App
         $router->get('/chat', [ChatController::class, 'index'], ['auth']);
         $router->post('/chat/new', [ChatController::class, 'create'], ['auth']);
         $router->post('/chat/message', [ChatController::class, 'storeMessage'], ['auth']);
+        $router->post('/chat/rename', [ChatController::class, 'rename'], ['auth']);
+        $router->post('/chat/delete', [ChatController::class, 'delete'], ['auth']);
 
         $router->get('/admin', [DashboardController::class, 'admin'], ['auth', 'role:ADMIN']);
 

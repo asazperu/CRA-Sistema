@@ -12,6 +12,17 @@ Base funcional lista para subir a HostGator/cPanel.
 - Middlewares `Auth` y `RoleGuard`.
 - Login / logout / cambio de contraseña.
 - Roles: `ADMIN` y `USER`.
+- Chat con OpenRouter (modo normal + streaming opcional).
+- Historial de chats (crear/renombrar/borrar).
+- Mensajes persistidos en MySQL y logs de uso en `api_usage_logs`.
+
+## Configuración OpenRouter
+Agrega en `.env` después de instalar:
+
+```env
+OPENROUTER_API_KEY=tu_api_key
+OPENROUTER_MODEL=openai/gpt-4o-mini
+```
 
 ## Instalación en HostGator (cPanel)
 1. En **cPanel > MySQL Databases**, crea una **base de datos** y un **usuario** MySQL.

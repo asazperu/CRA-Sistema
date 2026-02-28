@@ -14,4 +14,8 @@ return [
         'pass' => '',
         'charset' => 'utf8mb4',
     ],
+    'openrouter' => [
+        'base_url' => 'https://openrouter.ai/api/v1/chat/completions',
+        'model' => 'openai/gpt-4o-mini',
+    ],
 ];

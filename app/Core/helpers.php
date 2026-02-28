@@ -98,6 +98,54 @@ if (!function_exists('sanitize_input')) {
     }
 }
 
+
+if (!function_exists('safe_markdown')) {
+    function safe_markdown(string $markdown): string
+    {
+        $escaped = htmlspecialchars($markdown, ENT_QUOTES, 'UTF-8');
+
+        $escaped = preg_replace('/`([^`]+)`/', '<code>$1</code>', $escaped) ?? $escaped;
+        $escaped = preg_replace('/\*\*([^*]+)\*\*/', '<strong>$1</strong>', $escaped) ?? $escaped;
+        $escaped = preg_replace('/\*([^*]+)\*/', '<em>$1</em>', $escaped) ?? $escaped;
+        $escaped = preg_replace('/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/', '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>', $escaped) ?? $escaped;
+
+        $lines = preg_split('/
+||
+/', $escaped) ?: [];
+        $html = '';
+        $inList = false;
+
+        foreach ($lines as $line) {
+            $trim = trim($line);
+            if (preg_match('/^[-*]\s+(.+)/', $trim, $m) === 1) {
+                if (!$inList) {
+                    $html .= '<ul>';
+                    $inList = true;
+                }
+                $html .= '<li>' . $m[1] . '</li>';
+                continue;
+            }
+
+            if ($inList) {
+                $html .= '</ul>';
+                $inList = false;
+            }
+
+            if ($trim === '') {
+                continue;
+            }
+
+            $html .= '<p>' . $trim . '</p>';
+        }
+
+        if ($inList) {
+            $html .= '</ul>';
+        }
+
+        return $html;
+    }
+}
+
 if (!function_exists('e')) {
     function e(string $value): string
     {

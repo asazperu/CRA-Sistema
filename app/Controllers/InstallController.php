@@ -77,7 +77,7 @@ final class InstallController extends Controller
                 'status' => 'active',
             ]);
 
-            $env = "APP_NAME=Castro Romero Abogados\nAPP_URL={$input['app_url']}\nAPP_ENV=production\nDB_HOST={$input['db_host']}\nDB_PORT={$input['db_port']}\nDB_NAME={$input['db_name']}\nDB_USER={$input['db_user']}\nDB_PASS={$input['db_pass']}\n";
+            $env = "APP_NAME=Castro Romero Abogados\nAPP_URL={$input['app_url']}\nAPP_ENV=production\nDB_HOST={$input['db_host']}\nDB_PORT={$input['db_port']}\nDB_NAME={$input['db_name']}\nDB_USER={$input['db_user']}\nDB_PASS={$input['db_pass']}\nOPENROUTER_API_KEY=\nOPENROUTER_MODEL=openai/gpt-4o-mini\n";
             file_put_contents(base_path('.env'), $env);
             file_put_contents(base_path('install.lock'), 'installed:' . date('c'));
 

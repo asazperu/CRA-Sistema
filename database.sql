@@ -159,6 +159,29 @@ CREATE TABLE IF NOT EXISTS events_outbox (
   KEY idx_events_outbox_event_name (event_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+CREATE TABLE IF NOT EXISTS api_usage_logs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  conversation_id BIGINT UNSIGNED NULL,
+  provider VARCHAR(50) NOT NULL DEFAULT 'openrouter',
+  model VARCHAR(120) NULL,
+  endpoint VARCHAR(120) NOT NULL,
+  http_status SMALLINT UNSIGNED NULL,
+  latency_ms INT UNSIGNED NULL,
+  prompt_tokens_est INT UNSIGNED NULL,
+  completion_tokens_est INT UNSIGNED NULL,
+  total_tokens_est INT UNSIGNED NULL,
+  stream_mode TINYINT(1) NOT NULL DEFAULT 0,
+  error_message TEXT NULL,
+  created_at DATETIME NOT NULL,
+  KEY idx_api_usage_user_created (user_id, created_at),
+  KEY idx_api_usage_conversation (conversation_id),
+  KEY idx_api_usage_model (model),
+  CONSTRAINT fk_api_usage_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_api_usage_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS install_runs (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   app_url VARCHAR(255) NOT NULL,
