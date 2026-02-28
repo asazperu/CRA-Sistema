@@ -26,6 +26,10 @@ final class ChatController extends Controller
         $activeId = isset($_GET['id']) ? (int) $_GET['id'] : ($conversations[0]['id'] ?? null);
         $activeConversation = $activeId ? $conversationModel->find((int) $activeId, (int) $user['id']) : null;
         $messages = $activeConversation ? (new Message())->allByConversation((int) $activeConversation['id']) : [];
+        $kbSources = [];
+        if ($activeConversation) {
+            $kbSources = $_SESSION['kb_sources'][(int) $activeConversation['id']] ?? [];
+        }
 
         view('chat/index', [
             'title' => 'Asistente Legal IA',
@@ -33,6 +37,7 @@ final class ChatController extends Controller
             'conversations' => $conversations,
             'activeConversation' => $activeConversation,
             'messages' => $messages,
+            'kbSources' => $kbSources,
         ]);
     }
 
@@ -122,6 +127,8 @@ final class ChatController extends Controller
         if (count($analysis['flags']) > 0) {
             (new Flag())->createMany($analysisRunId, $conversationId, $analysis['flags']);
         }
+
+        $_SESSION['kb_sources'][$conversationId] = $analysis['kb_titles'] ?? [];
 
         $apiMessages = [[
             'role' => 'system',

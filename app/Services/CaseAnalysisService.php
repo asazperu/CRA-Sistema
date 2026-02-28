@@ -5,24 +5,34 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\DocumentText;
+use App\Models\KnowledgeArticle;
 
 final class CaseAnalysisService
 {
     public function buildContextAndFlags(int $userId, int $conversationId, string $query): array
     {
         $keywords = $this->extractKeywords($query);
-        $chunks = (new DocumentText())->searchRelevant($userId, $conversationId, $keywords, 8);
+
+        $docChunks = (new DocumentText())->searchRelevant($userId, $conversationId, $keywords, 8);
+        $kbArticles = (new KnowledgeArticle())->searchByKeywords($keywords, 6);
 
         $contextLines = [];
-        foreach ($chunks as $chunk) {
+        foreach ($docChunks as $chunk) {
             $snippet = mb_substr(trim((string) $chunk['content']), 0, 320);
-            $contextLines[] = sprintf('[Documento:%s | chunk:%d] %s', $chunk['original_name'], (int) $chunk['chunk_index'], $snippet);
+            $contextLines[] = sprintf('[CASO | Documento:%s | chunk:%d] %s', $chunk['original_name'], (int) $chunk['chunk_index'], $snippet);
         }
+
+        // KB como segunda prioridad: se añade después del contexto documental del caso.
+        foreach ($kbArticles as $kb) {
+            $snippet = mb_substr(trim((string) $kb['body']), 0, 260);
+            $contextLines[] = sprintf('[KB | %s] %s', (string) $kb['title'], $snippet);
+        }
+
         $context = implode("\n", $contextLines);
 
         $flags = [];
-        if (count($chunks) === 0) {
-            $flags[] = ['flag_type' => 'omission', 'severity' => 'high', 'message' => 'No se encontraron fragmentos documentales relevantes para la consulta.'];
+        if (count($docChunks) === 0) {
+            $flags[] = ['flag_type' => 'omission', 'severity' => 'high', 'message' => 'No se encontraron fragmentos del caso relevantes para la consulta.'];
         }
 
         if ($this->containsAny($query, ['demanda', 'apelación', 'contestación', 'recurso']) && !$this->containsAny($context, ['plazo', 'días', 'vencimiento'])) {
@@ -39,7 +49,9 @@ final class CaseAnalysisService
 
         return [
             'keywords' => $keywords,
-            'chunks' => $chunks,
+            'chunks' => $docChunks,
+            'kb_articles' => $kbArticles,
+            'kb_titles' => array_values(array_map(static fn($a) => (string) $a['title'], $kbArticles)),
             'context' => $context,
             'flags' => $flags,
         ];

@@ -34,6 +34,32 @@
             <button type="submit">Guardar IA</button>
         </form>
 
+
+        <h3>KB (Knowledge Base legal)</h3>
+        <form method="post" action="/admin/kb/create" class="form-grid">
+            <?= csrf_field() ?>
+            <label>Título</label><input name="title" required>
+            <label>Tags (coma separada)</label><input name="tags" placeholder="laboral, casación, despido">
+            <label>Fuente (URL/opcional)</label><input name="source_url" placeholder="https://...">
+            <label>Texto legal</label><textarea name="body" rows="8" required></textarea>
+            <button type="submit">Cargar documento legal a KB</button>
+        </form>
+
+        <form method="get" action="/admin" class="form-grid" style="margin-top:10px;">
+            <label>Búsqueda keyword KB</label>
+            <input name="kb_q" value="<?= e((string) ($kbQuery ?? '')) ?>" placeholder="buscar por palabra clave...">
+            <button type="submit">Buscar en KB</button>
+        </form>
+
+        <div style="max-height:240px;overflow:auto;background:#0e1530;padding:10px;border-radius:8px; margin-top:10px;">
+            <?php foreach (($kbResults ?? []) as $kb): ?>
+                <div style="padding:6px 0;border-bottom:1px solid #253364;">
+                    <strong><?= e((string) $kb['title']) ?></strong>
+                    <small>tags: <?= e((string) ($kb['tags'] ?? '')) ?> | fuente: <?= e((string) ($kb['source_url'] ?? '')) ?></small>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
         <h3>CRUD Usuarios</h3>
         <form method="post" action="/admin/users/create" class="form-grid two-cols">
             <?= csrf_field() ?>

@@ -8,6 +8,7 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Models\ApiUsageLog;
 use App\Models\AuditLog;
+use App\Models\KnowledgeArticle;
 use App\Models\Setting;
 use App\Models\User;
 
@@ -23,6 +24,7 @@ final class DashboardController extends Controller
     {
         $user = Auth::user();
         $settings = new Setting();
+        $kbQuery = trim((string) ($_GET['kb_q'] ?? ''));
 
         $brand = [
             'name' => $settings->get('brand_name', 'Castro Romero Abogados'),
@@ -38,6 +40,8 @@ final class DashboardController extends Controller
             'system_prompt' => $settings->get('openrouter_system_prompt', $this->defaultSystemPrompt()),
         ];
 
+        $kbResults = (new KnowledgeArticle())->search($kbQuery, 40);
+
         view('dashboard/admin', [
             'title' => 'Panel Admin',
             'user' => $user,
@@ -46,6 +50,8 @@ final class DashboardController extends Controller
             'users' => (new User())->all(),
             'auditLogs' => (new AuditLog())->latest(50),
             'usageLogs' => (new ApiUsageLog())->latest(50),
+            'kbQuery' => $kbQuery,
+            'kbResults' => $kbResults,
         ]);
     }
 
@@ -83,6 +89,37 @@ final class DashboardController extends Controller
         $settings->set('openrouter_system_prompt', $prompt);
         $this->audit('update_ai_settings', 'settings', null, ['model' => $model]);
         flash('success', 'Configuración IA actualizada.');
+        redirect('/admin');
+    }
+
+    public function createKbArticle(): void
+    {
+        verify_csrf();
+        $user = Auth::user();
+
+        $title = sanitize_input((string) ($_POST['title'] ?? ''));
+        $body = trim((string) ($_POST['body'] ?? ''));
+        $tags = sanitize_input((string) ($_POST['tags'] ?? ''));
+        $source = sanitize_input((string) ($_POST['source_url'] ?? ''));
+
+        if ($title === '' || $body === '') {
+            flash('error', 'Título y texto legal son obligatorios para KB.');
+            redirect('/admin');
+        }
+
+        $slug = $this->slugify($title) . '-' . substr(bin2hex(random_bytes(3)), 0, 6);
+        $id = (new KnowledgeArticle())->create([
+            'title' => $title,
+            'slug' => $slug,
+            'body' => $body,
+            'tags' => $tags,
+            'source_url' => $source,
+            'created_by' => (int) ($user['id'] ?? 0),
+            'is_published' => 1,
+        ]);
+
+        $this->audit('kb_create_article', 'knowledge_articles', $id, ['title' => $title, 'tags' => $tags]);
+        flash('success', 'Documento legal cargado en KB.');
         redirect('/admin');
     }
 
@@ -151,6 +188,13 @@ final class DashboardController extends Controller
             'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
             'metadata' => $meta,
         ]);
+    }
+
+    private function slugify(string $text): string
+    {
+        $text = mb_strtolower($text);
+        $text = preg_replace('/[^\p{L}\p{N}]+/u', '-', $text) ?? $text;
+        return trim($text, '-') ?: 'kb-doc';
     }
 
     private function defaultSystemPrompt(): string

@@ -17,6 +17,7 @@ Base funcional lista para subir a HostGator/cPanel.
 - Mensajes persistidos en MySQL y logs de uso en `api_usage_logs`.
 - Enriquecimiento previo a OpenRouter con documentos/chunks relevantes + banderas en `flags` y corrida en `analysis_runs`.
 - Panel ADMIN con marca, IA, CRUD de usuarios, `audit_logs` y consumo.
+- Módulo KB: carga de documentos legales (texto+tags+fuente), búsqueda keyword, y uso en chat como segunda prioridad.
 - Módulo Documentos con:
   - carpeta física fuera de `public/` (`storage/documentos`),
   - upload/list/download/delete/reprocess,
@@ -56,3 +57,8 @@ OPENROUTER_MODEL=openai/gpt-4o-mini
 
 ## Importante
 La app **no crea físicamente la base de datos** en hosting; usa la que tú creas en cPanel/phpMyAdmin.
+
+
+## KB en respuestas de chat
+El chat primero usa documentos del caso y luego KB como segunda prioridad.
+La interfaz muestra “Fuentes KB usadas” por título cuando se emplean fragmentos de KB.

@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS knowledge_articles (
   title VARCHAR(180) NOT NULL,
   slug VARCHAR(200) NOT NULL,
   body LONGTEXT NOT NULL,
+  tags VARCHAR(255) NULL,
   source_url VARCHAR(255) NULL,
   is_published TINYINT(1) NOT NULL DEFAULT 1,
   created_by BIGINT UNSIGNED NOT NULL,

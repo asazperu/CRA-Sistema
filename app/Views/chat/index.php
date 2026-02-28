@@ -37,6 +37,17 @@
             <small>OpenRouter integrado (normal + streaming opcional).</small>
         </header>
         <div class="messages" id="messages">
+
+        <?php if (!empty($kbSources)): ?>
+            <div class="alert" style="background:#1d3a5a;">
+                <strong>Fuentes KB usadas:</strong>
+                <ul>
+                    <?php foreach ($kbSources as $src): ?>
+                        <li><?= e((string) $src) ?></li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        <?php endif; ?>
             <?php if ($error = flash_get('error')): ?>
                 <div class="alert"><?= e($error) ?></div>
             <?php endif; ?>
