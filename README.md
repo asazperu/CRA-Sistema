@@ -15,6 +15,7 @@ Base funcional lista para subir a HostGator/cPanel.
 - Chat con OpenRouter (modo normal + streaming opcional).
 - Historial de chats (crear/renombrar/borrar).
 - Mensajes persistidos en MySQL y logs de uso en `api_usage_logs`.
+- Enriquecimiento previo a OpenRouter con documentos/chunks relevantes + banderas en `flags` y corrida en `analysis_runs`.
 - Panel ADMIN con marca, IA, CRUD de usuarios, `audit_logs` y consumo.
 - Módulo Documentos con:
   - carpeta física fuera de `public/` (`storage/documentos`),

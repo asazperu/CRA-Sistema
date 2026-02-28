@@ -6,10 +6,13 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Controller;
+use App\Models\AnalysisRun;
 use App\Models\ApiUsageLog;
 use App\Models\Conversation;
+use App\Models\Flag;
 use App\Models\Message;
 use App\Models\Setting;
+use App\Services\CaseAnalysisService;
 use App\Services\OpenRouterService;
 
 final class ChatController extends Controller
@@ -102,9 +105,30 @@ final class ChatController extends Controller
             "No inventes citas; si falta información, indícalo. Incluye disclaimer final."
         );
 
+        $analysis = (new CaseAnalysisService())->buildContextAndFlags((int) $user['id'], $conversationId, $content);
+        $contextPrompt = "Contexto documental relevante (fragmentos citados):\n" . ($analysis['context'] !== '' ? $analysis['context'] : 'Sin fragmentos relevantes.')
+            . "\n\nBanderas de análisis detectadas:\n"
+            . (count($analysis['flags']) > 0 ? implode("\n", array_map(static fn($f) => '- ' . $f['flag_type'] . ': ' . $f['message'], $analysis['flags'])) : '- Sin banderas automáticas.');
+
+        $analysisRunId = (new AnalysisRun())->create([
+            'user_id' => (int) $user['id'],
+            'conversation_id' => $conversationId,
+            'query_text' => $content,
+            'context_excerpt' => mb_substr($analysis['context'], 0, 4000),
+            'tokens_est' => (int) ceil(strlen($analysis['context']) / 4),
+            'status' => 'ok',
+        ]);
+
+        if (count($analysis['flags']) > 0) {
+            (new Flag())->createMany($analysisRunId, $conversationId, $analysis['flags']);
+        }
+
         $apiMessages = [[
             'role' => 'system',
             'content' => (string) $systemPrompt,
+        ], [
+            'role' => 'system',
+            'content' => $contextPrompt,
         ]];
 
         foreach ($historyRows as $row) {

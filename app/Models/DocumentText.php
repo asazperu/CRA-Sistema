@@ -32,4 +32,35 @@ final class DocumentText
             throw $e;
         }
     }
+
+    public function searchRelevant(int $userId, int $conversationId, array $keywords, int $limit = 8): array
+    {
+        $where = '(d.user_id = :user_id AND (d.conversation_id = :conversation_id OR d.conversation_id IS NULL))';
+        $params = [
+            'user_id' => $userId,
+            'conversation_id' => $conversationId,
+        ];
+
+        $keywordSql = '';
+        if (count($keywords) > 0) {
+            $parts = [];
+            foreach ($keywords as $i => $kw) {
+                $key = 'kw' . $i;
+                $parts[] = 'dt.content LIKE :' . $key;
+                $params[$key] = '%' . $kw . '%';
+            }
+            $keywordSql = ' AND (' . implode(' OR ', $parts) . ')';
+        }
+
+        $sql = 'SELECT dt.*, d.original_name, d.storage_path
+                FROM document_texts dt
+                INNER JOIN documents d ON d.id = dt.document_id
+                WHERE ' . $where . $keywordSql . '
+                ORDER BY dt.created_at DESC
+                LIMIT ' . (int) $limit;
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
 }

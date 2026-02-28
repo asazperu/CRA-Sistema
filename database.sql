@@ -206,6 +206,37 @@ CREATE TABLE IF NOT EXISTS api_usage_logs (
   CONSTRAINT fk_api_usage_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+CREATE TABLE IF NOT EXISTS analysis_runs (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id BIGINT UNSIGNED NOT NULL,
+  conversation_id BIGINT UNSIGNED NOT NULL,
+  query_text MEDIUMTEXT NOT NULL,
+  context_excerpt MEDIUMTEXT NULL,
+  tokens_est INT UNSIGNED NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'ok',
+  created_at DATETIME NOT NULL,
+  KEY idx_analysis_runs_user_created (user_id, created_at),
+  KEY idx_analysis_runs_conversation (conversation_id),
+  CONSTRAINT fk_analysis_runs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  CONSTRAINT fk_analysis_runs_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS flags (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  analysis_run_id BIGINT UNSIGNED NOT NULL,
+  conversation_id BIGINT UNSIGNED NOT NULL,
+  flag_type ENUM('contradiction','omission','procedural_risk','missing_question') NOT NULL,
+  severity ENUM('low','medium','high') NOT NULL DEFAULT 'medium',
+  message TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  KEY idx_flags_analysis_run (analysis_run_id),
+  KEY idx_flags_conversation (conversation_id),
+  KEY idx_flags_type_severity (flag_type, severity),
+  CONSTRAINT fk_flags_analysis_run FOREIGN KEY (analysis_run_id) REFERENCES analysis_runs(id) ON DELETE CASCADE,
+  CONSTRAINT fk_flags_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS install_runs (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   app_url VARCHAR(255) NOT NULL,
