@@ -49,7 +49,18 @@ final class Document
 
     public function reprocess(int $id, int $userId, string $status = 'pending'): void
     {
-        $stmt = Database::connection()->prepare('UPDATE documents SET processing_status=:status, processed_at = NULL WHERE id=:id AND user_id=:user_id');
+        $stmt = Database::connection()->prepare('UPDATE documents SET processing_status=:status, parse_warning=NULL, processed_at = NULL WHERE id=:id AND user_id=:user_id');
         $stmt->execute(['id' => $id, 'user_id' => $userId, 'status' => $status]);
+    }
+
+    public function updateProcessingResult(int $id, int $userId, string $status, ?string $warning = null): void
+    {
+        $stmt = Database::connection()->prepare('UPDATE documents SET processing_status=:status, parse_warning=:parse_warning, processed_at=NOW() WHERE id=:id AND user_id=:user_id');
+        $stmt->execute([
+            'id' => $id,
+            'user_id' => $userId,
+            'status' => $status,
+            'parse_warning' => $warning,
+        ]);
     }
 }

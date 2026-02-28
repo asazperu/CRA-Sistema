@@ -19,7 +19,7 @@
 
         <div style="margin-top:16px; overflow:auto;">
             <table style="width:100%; border-collapse: collapse;">
-                <thead><tr><th>ID</th><th>Nombre</th><th>MIME</th><th>Tamaño</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <thead><tr><th>ID</th><th>Nombre</th><th>MIME</th><th>Tamaño</th><th>Estado</th><th>Aviso</th><th>Acciones</th></tr></thead>
                 <tbody>
                 <?php foreach ($documents as $d): ?>
                     <tr>
@@ -28,6 +28,7 @@
                         <td><?= e((string) $d['mime_type']) ?></td>
                         <td><?= e((string) $d['size_bytes']) ?> bytes</td>
                         <td><?= e((string) ($d['processing_status'] ?? 'pending')) ?></td>
+                        <td><?= e((string) ($d['parse_warning'] ?? '')) ?></td>
                         <td>
                             <a class="btn" href="/documentos/download?id=<?= (int) $d['id'] ?>">Descargar</a>
                             <form method="post" action="/documentos/reprocess" style="display:inline-block;">

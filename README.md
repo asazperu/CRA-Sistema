@@ -23,6 +23,8 @@ Base funcional lista para subir a HostGator/cPanel.
   - renombrado UUID,
   - permisos por usuario,
   - auditoría de acciones.
+  - parseo de contenido (PDF/DOCX) y chunking a `document_texts` (800–1500 chars),
+  - detección de PDF escaneado (texto vacío) con advertencia de OCR si no hay binarios.
 
 ## Configuración OpenRouter
 Agrega en `.env` después de instalar:

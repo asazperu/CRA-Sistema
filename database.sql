@@ -106,7 +106,8 @@ CREATE TABLE IF NOT EXISTS documents (
   size_bytes BIGINT UNSIGNED NOT NULL,
   checksum_sha256 CHAR(64) NULL,
   storage_path VARCHAR(255) NOT NULL,
-  processing_status ENUM('pending','processed','failed') NOT NULL DEFAULT 'pending',
+  processing_status ENUM('pending','processed','error') NOT NULL DEFAULT 'pending',
+  parse_warning TEXT NULL,
   processed_at DATETIME NULL,
   uploaded_at DATETIME NOT NULL,
   KEY idx_documents_user_uploaded (user_id, uploaded_at),
@@ -114,6 +115,18 @@ CREATE TABLE IF NOT EXISTS documents (
   KEY idx_documents_checksum (checksum_sha256),
   CONSTRAINT fk_documents_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   CONSTRAINT fk_documents_conversation FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+CREATE TABLE IF NOT EXISTS document_texts (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  document_id BIGINT UNSIGNED NOT NULL,
+  chunk_index INT UNSIGNED NOT NULL,
+  content MEDIUMTEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  KEY idx_document_texts_document (document_id),
+  KEY idx_document_texts_chunk (document_id, chunk_index),
+  CONSTRAINT fk_document_texts_document FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS exports (

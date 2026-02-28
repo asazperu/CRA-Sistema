@@ -8,6 +8,8 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Models\AuditLog;
 use App\Models\Document;
+use App\Models\DocumentText;
+use App\Services\DocumentParseService;
 
 final class DocumentController extends Controller
 {
@@ -78,7 +80,8 @@ final class DocumentController extends Controller
 
         chmod($destination, 0640);
 
-        $docId = (new Document())->create([
+        $model = new Document();
+        $docId = $model->create([
             'user_id' => (int) $user['id'],
             'original_name' => $originalName,
             'stored_name' => $storedName,
@@ -90,8 +93,23 @@ final class DocumentController extends Controller
             'processing_status' => 'pending',
         ]);
 
-        $this->audit('document_upload', 'documents', $docId, ['name' => $originalName, 'mime' => $mime]);
-        flash('success', 'Documento subido correctamente.');
+        $parseResult = (new DocumentParseService())->parse($destination, $mime);
+        (new DocumentText())->replaceChunks($docId, $parseResult['chunks']);
+        $warning = count($parseResult['warnings']) > 0 ? implode(' | ', $parseResult['warnings']) : null;
+        $model->updateProcessingResult($docId, (int) $user['id'], $parseResult['status'], $warning);
+
+        $this->audit('document_upload', 'documents', $docId, [
+            'name' => $originalName,
+            'mime' => $mime,
+            'chunks' => count($parseResult['chunks']),
+            'status' => $parseResult['status'],
+        ]);
+
+        if ($warning) {
+            flash('error', $warning);
+        } else {
+            flash('success', 'Documento subido y procesado correctamente.');
+        }
         redirect('/documentos');
     }
 
@@ -153,9 +171,32 @@ final class DocumentController extends Controller
         $user = Auth::user();
         $id = (int) ($_POST['id'] ?? 0);
 
-        (new Document())->reprocess($id, (int) $user['id'], 'pending');
-        $this->audit('document_reprocess', 'documents', $id, ['status' => 'pending']);
-        flash('success', 'Documento marcado para reproceso.');
+        $model = new Document();
+        $document = $model->findByIdForUser($id, (int) $user['id']);
+        if (!$document) {
+            flash('error', 'Documento no encontrado.');
+            redirect('/documentos');
+        }
+
+        $model->reprocess($id, (int) $user['id'], 'pending');
+
+        $absolute = base_path((string) $document['storage_path']);
+        $result = (new DocumentParseService())->parse($absolute, (string) $document['mime_type']);
+        (new DocumentText())->replaceChunks($id, $result['chunks']);
+        $warning = count($result['warnings']) > 0 ? implode(' | ', $result['warnings']) : null;
+        $model->updateProcessingResult($id, (int) $user['id'], $result['status'], $warning);
+
+        $this->audit('document_reprocess', 'documents', $id, [
+            'status' => $result['status'],
+            'chunks' => count($result['chunks']),
+        ]);
+
+        if ($warning) {
+            flash('error', $warning);
+        } else {
+            flash('success', 'Documento reprocesado correctamente.');
+        }
+
         redirect('/documentos');
     }
 
