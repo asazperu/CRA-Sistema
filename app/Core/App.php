@@ -73,7 +73,11 @@ final class App
         $router->post('/chat/delete', [ChatController::class, 'delete'], ['auth']);
 
         $router->get('/admin', [DashboardController::class, 'admin'], ['auth', 'role:ADMIN']);
-        $router->post('/admin/system-prompt', [DashboardController::class, 'saveSystemPrompt'], ['auth', 'role:ADMIN']);
+        $router->post('/admin/brand', [DashboardController::class, 'saveBrand'], ['auth', 'role:ADMIN']);
+        $router->post('/admin/ai', [DashboardController::class, 'saveAI'], ['auth', 'role:ADMIN']);
+        $router->post('/admin/users/create', [DashboardController::class, 'createUser'], ['auth', 'role:ADMIN']);
+        $router->post('/admin/users/reset-password', [DashboardController::class, 'resetUserPassword'], ['auth', 'role:ADMIN']);
+        $router->post('/admin/users/toggle-status', [DashboardController::class, 'toggleUserStatus'], ['auth', 'role:ADMIN']);
 
         $router->get('/install', [InstallController::class, 'index']);
         $router->post('/install', [InstallController::class, 'store']);

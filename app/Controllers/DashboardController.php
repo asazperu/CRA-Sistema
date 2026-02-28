@@ -6,7 +6,10 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Controller;
+use App\Models\ApiUsageLog;
+use App\Models\AuditLog;
 use App\Models\Setting;
+use App\Models\User;
 
 final class DashboardController extends Controller
 {
@@ -19,29 +22,135 @@ final class DashboardController extends Controller
     public function admin(): void
     {
         $user = Auth::user();
-        $defaultPrompt = $this->defaultSystemPrompt();
-        $prompt = (new Setting())->get('openrouter_system_prompt', $defaultPrompt);
+        $settings = new Setting();
+
+        $brand = [
+            'name' => $settings->get('brand_name', 'Castro Romero Abogados'),
+            'logo' => $settings->get('brand_logo', ''),
+            'primary' => $settings->get('brand_color_primary', '#4f7cff'),
+            'secondary' => $settings->get('brand_color_secondary', '#1f2a50'),
+        ];
+
+        $ai = [
+            'model' => $settings->get('ai_model', config('env.OPENROUTER_MODEL', 'openai/gpt-4o-mini')),
+            'temperature' => $settings->get('ai_temperature', '0.2'),
+            'max_tokens' => $settings->get('ai_max_tokens', '1200'),
+            'system_prompt' => $settings->get('openrouter_system_prompt', $this->defaultSystemPrompt()),
+        ];
 
         view('dashboard/admin', [
             'title' => 'Panel Admin',
             'user' => $user,
-            'systemPrompt' => $prompt,
+            'brand' => $brand,
+            'ai' => $ai,
+            'users' => (new User())->all(),
+            'auditLogs' => (new AuditLog())->latest(50),
+            'usageLogs' => (new ApiUsageLog())->latest(50),
         ]);
     }
 
-    public function saveSystemPrompt(): void
+    public function saveBrand(): void
+    {
+        verify_csrf();
+        $settings = new Setting();
+        $settings->set('brand_name', sanitize_input((string) ($_POST['brand_name'] ?? 'Castro Romero Abogados')));
+        $settings->set('brand_logo', sanitize_input((string) ($_POST['brand_logo'] ?? '')));
+        $settings->set('brand_color_primary', sanitize_input((string) ($_POST['brand_color_primary'] ?? '#4f7cff')));
+        $settings->set('brand_color_secondary', sanitize_input((string) ($_POST['brand_color_secondary'] ?? '#1f2a50')));
+        $this->audit('update_brand', 'settings', null, ['brand_name' => $_POST['brand_name'] ?? '']);
+        flash('success', 'Marca actualizada.');
+        redirect('/admin');
+    }
+
+    public function saveAI(): void
     {
         verify_csrf();
 
+        $model = sanitize_input((string) ($_POST['ai_model'] ?? 'openai/gpt-4o-mini'));
+        $temperature = (string) ($_POST['ai_temperature'] ?? '0.2');
+        $maxTokens = (string) ($_POST['ai_max_tokens'] ?? '1200');
         $prompt = trim((string) ($_POST['system_prompt'] ?? ''));
+
         if ($prompt === '') {
             flash('error', 'El system prompt no puede estar vacío.');
             redirect('/admin');
         }
 
-        (new Setting())->set('openrouter_system_prompt', $prompt);
-        flash('success', 'System prompt actualizado correctamente.');
+        $settings = new Setting();
+        $settings->set('ai_model', $model);
+        $settings->set('ai_temperature', $temperature);
+        $settings->set('ai_max_tokens', $maxTokens);
+        $settings->set('openrouter_system_prompt', $prompt);
+        $this->audit('update_ai_settings', 'settings', null, ['model' => $model]);
+        flash('success', 'Configuración IA actualizada.');
         redirect('/admin');
+    }
+
+    public function createUser(): void
+    {
+        verify_csrf();
+
+        $name = sanitize_input((string) ($_POST['name'] ?? ''));
+        $email = sanitize_input((string) ($_POST['email'] ?? ''));
+        $password = (string) ($_POST['password'] ?? '');
+        $role = sanitize_input((string) ($_POST['role'] ?? 'USER'));
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8 || $name === '') {
+            flash('error', 'Datos de usuario inválidos.');
+            redirect('/admin');
+        }
+
+        $id = (new User())->createUser($name, $email, $password, $role === 'ADMIN' ? 'ADMIN' : 'USER');
+        $this->audit('create_user', 'users', $id, ['email' => $email, 'role' => $role]);
+        flash('success', 'Usuario creado.');
+        redirect('/admin');
+    }
+
+    public function resetUserPassword(): void
+    {
+        verify_csrf();
+        $userId = (int) ($_POST['user_id'] ?? 0);
+        $newPassword = (string) ($_POST['new_password'] ?? '');
+        if ($userId <= 0 || strlen($newPassword) < 8) {
+            flash('error', 'Datos inválidos para reset de contraseña.');
+            redirect('/admin');
+        }
+
+        (new User())->updatePassword($userId, $newPassword);
+        $this->audit('reset_user_password', 'users', $userId, []);
+        flash('success', 'Contraseña de usuario actualizada.');
+        redirect('/admin');
+    }
+
+    public function toggleUserStatus(): void
+    {
+        verify_csrf();
+        $userId = (int) ($_POST['user_id'] ?? 0);
+        $status = sanitize_input((string) ($_POST['status'] ?? 'inactive'));
+
+        if ($userId <= 0 || !in_array($status, ['active', 'inactive'], true)) {
+            flash('error', 'Estado inválido.');
+            redirect('/admin');
+        }
+
+        (new User())->setStatus($userId, $status);
+        $this->audit('toggle_user_status', 'users', $userId, ['status' => $status]);
+        flash('success', 'Estado de usuario actualizado.');
+        redirect('/admin');
+    }
+
+    private function audit(string $action, ?string $entityType, ?int $entityId, array $meta): void
+    {
+        $user = Auth::user();
+        (new AuditLog())->create([
+            'user_id' => $user['id'] ?? null,
+            'action' => $action,
+            'entity_type' => $entityType,
+            'entity_id' => $entityId,
+            'ip_address' => $_SERVER['REMOTE_ADDR'] ?? null,
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? null,
+            'metadata' => $meta,
+        ]);
     }
 
     private function defaultSystemPrompt(): string

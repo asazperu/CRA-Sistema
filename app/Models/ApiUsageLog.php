@@ -30,4 +30,12 @@ final class ApiUsageLog
             'error_message' => $data['error_message'] ?? null,
         ]);
     }
+
+    public function latest(int $limit = 100): array
+    {
+        $stmt = Database::connection()->prepare('SELECT * FROM api_usage_logs ORDER BY created_at DESC LIMIT :limit');
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
 }

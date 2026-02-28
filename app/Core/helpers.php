@@ -99,6 +99,18 @@ if (!function_exists('sanitize_input')) {
 }
 
 
+
+if (!function_exists('app_setting')) {
+    function app_setting(string $key, string $default = ''): string
+    {
+        try {
+            return (new App\Models\Setting())->get($key, $default) ?? $default;
+        } catch (\Throwable $e) {
+            return $default;
+        }
+    }
+}
+
 if (!function_exists('safe_markdown')) {
     function safe_markdown(string $markdown): string
     {
@@ -110,7 +122,9 @@ if (!function_exists('safe_markdown')) {
         $escaped = preg_replace('/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/', '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>', $escaped) ?? $escaped;
 
         $lines = preg_split('/
-||
+|
+|
+|
 /', $escaped) ?: [];
         $html = '';
         $inList = false;

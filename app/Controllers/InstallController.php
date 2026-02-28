@@ -91,10 +91,22 @@ final class InstallController extends Controller
                 . "Incluye siempre un disclaimer final indicando que es orientación general y no sustituye asesoría legal profesional.";
 
             $settingsStmt = $pdo->prepare('INSERT INTO settings (setting_key, setting_value, updated_at) VALUES (:setting_key, :setting_value, NOW()) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = VALUES(updated_at)');
-            $settingsStmt->execute([
-                'setting_key' => 'openrouter_system_prompt',
-                'setting_value' => $defaultSystemPrompt,
-            ]);
+            $defaultSettings = [
+                'openrouter_system_prompt' => $defaultSystemPrompt,
+                'brand_name' => 'Castro Romero Abogados',
+                'brand_logo' => '',
+                'brand_color_primary' => '#4f7cff',
+                'brand_color_secondary' => '#1f2a50',
+                'ai_model' => 'openai/gpt-4o-mini',
+                'ai_temperature' => '0.2',
+                'ai_max_tokens' => '1200',
+            ];
+            foreach ($defaultSettings as $k => $v) {
+                $settingsStmt->execute([
+                    'setting_key' => $k,
+                    'setting_value' => $v,
+                ]);
+            }
 
             $env = "APP_NAME=Castro Romero Abogados\nAPP_URL={$input['app_url']}\nAPP_ENV=production\nDB_HOST={$input['db_host']}\nDB_PORT={$input['db_port']}\nDB_NAME={$input['db_name']}\nDB_USER={$input['db_user']}\nDB_PASS={$input['db_pass']}\nOPENROUTER_API_KEY=\nOPENROUTER_MODEL=openai/gpt-4o-mini\n";
             file_put_contents(base_path('.env'), $env);

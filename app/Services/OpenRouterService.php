@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\Setting;
 use RuntimeException;
 
 final class OpenRouterService
@@ -17,14 +18,19 @@ final class OpenRouterService
             throw new RuntimeException('OPENROUTER_API_KEY no está configurada en .env');
         }
 
-        $model = (string) config('env.OPENROUTER_MODEL', 'openai/gpt-4o-mini');
+        $settings = new Setting();
+        $model = (string) ($settings->get('ai_model', config('env.OPENROUTER_MODEL', 'openai/gpt-4o-mini')) ?? 'openai/gpt-4o-mini');
+        $temperature = (float) ($settings->get('ai_temperature', '0.2') ?? '0.2');
+        $maxTokens = (int) ($settings->get('ai_max_tokens', '1200') ?? '1200');
+
         $appUrl = (string) config('env.APP_URL', config('app.url', ''));
         $appName = (string) config('env.APP_NAME', config('app.name', 'CRA Legal IA'));
 
         $payload = [
             'model' => $model,
             'messages' => $messages,
-            'temperature' => 0.2,
+            'temperature' => $temperature,
+            'max_tokens' => $maxTokens,
             'stream' => $stream,
         ];
 
@@ -56,23 +62,19 @@ final class OpenRouterService
                 while (($pos = strpos($buffer, "\n")) !== false) {
                     $line = trim(substr($buffer, 0, $pos));
                     $buffer = substr($buffer, $pos + 1);
-
                     if (!str_starts_with($line, 'data:')) {
                         continue;
                     }
-
                     $data = trim(substr($line, 5));
                     if ($data === '' || $data === '[DONE]') {
                         continue;
                     }
-
                     $json = json_decode($data, true);
                     $delta = $json['choices'][0]['delta']['content'] ?? '';
                     if (is_string($delta)) {
                         $assistantText .= $delta;
                     }
                 }
-
                 return strlen($chunk);
             });
         }
