@@ -140,6 +140,52 @@ if (!function_exists('safe_markdown')) {
                 continue;
             }
 
+
+
+if (!function_exists('client_ip')) {
+    function client_ip(): string
+    {
+        $ip = (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown');
+        if (str_contains($ip, ',')) {
+            $parts = explode(',', $ip);
+            $ip = trim((string) ($parts[0] ?? 'unknown'));
+        }
+        return $ip;
+    }
+}
+
+if (!function_exists('rate_limit_hit')) {
+    function rate_limit_hit(string $key, int $limit, int $windowSeconds): array
+    {
+        if (!isset($_SESSION['_rate_limit']) || !is_array($_SESSION['_rate_limit'])) {
+            $_SESSION['_rate_limit'] = [];
+        }
+
+        $now = time();
+        $bucket = $_SESSION['_rate_limit'][$key] ?? ['start' => $now, 'count' => 0];
+        $start = (int) ($bucket['start'] ?? $now);
+        $count = (int) ($bucket['count'] ?? 0);
+
+        if (($now - $start) >= $windowSeconds) {
+            $start = $now;
+            $count = 0;
+        }
+
+        $count++;
+        $_SESSION['_rate_limit'][$key] = ['start' => $start, 'count' => $count];
+
+        $remaining = max(0, $limit - $count);
+        $retryAfter = max(0, $windowSeconds - ($now - $start));
+
+        return [
+            'blocked' => $count > $limit,
+            'remaining' => $remaining,
+            'retry_after' => $retryAfter,
+            'count' => $count,
+        ];
+    }
+}
+
             if ($inList) {
                 $html .= '</ul>';
                 $inList = false;

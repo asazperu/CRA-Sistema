@@ -13,7 +13,8 @@ final class InstallController extends Controller
     public function index(): void
     {
         if (is_file(base_path('install.lock'))) {
-            exit('Instalación bloqueada. Elimine install.lock solo si necesita reinstalar.');
+            http_response_code(404);
+            exit('404 - Instalador no disponible');
         }
 
         view('install/index', ['title' => 'Instalador'], 'layouts/install');
@@ -22,7 +23,8 @@ final class InstallController extends Controller
     public function testConnection(): void
     {
         if (is_file(base_path('install.lock'))) {
-            exit('Instalación ya completada.');
+            http_response_code(404);
+            exit('404 - Instalador no disponible');
         }
 
         verify_csrf();
@@ -38,7 +40,7 @@ final class InstallController extends Controller
             );
             flash('success', 'Conexión MySQL exitosa. Ya puedes ejecutar la instalación.');
         } catch (Throwable $e) {
-            flash('error', 'No se pudo conectar a MySQL: ' . $e->getMessage());
+            flash('error', 'No se pudo conectar a MySQL. Verifica host, puerto, usuario y permisos.');
         }
 
         redirect('/install');
@@ -47,7 +49,8 @@ final class InstallController extends Controller
     public function store(): void
     {
         if (is_file(base_path('install.lock'))) {
-            exit('Instalación ya completada.');
+            http_response_code(404);
+            exit('404 - Instalador no disponible');
         }
 
         verify_csrf();
@@ -108,13 +111,29 @@ final class InstallController extends Controller
                 ]);
             }
 
-            $env = "APP_NAME=Castro Romero Abogados\nAPP_URL={$input['app_url']}\nAPP_ENV=production\nDB_HOST={$input['db_host']}\nDB_PORT={$input['db_port']}\nDB_NAME={$input['db_name']}\nDB_USER={$input['db_user']}\nDB_PASS={$input['db_pass']}\nOPENROUTER_API_KEY=\nOPENROUTER_MODEL=openai/gpt-4o-mini\n";
-            file_put_contents(base_path('.env'), $env);
-            file_put_contents(base_path('install.lock'), 'installed:' . date('c'));
+            $appKey = bin2hex(random_bytes(32));
+            $env = "APP_NAME=Castro Romero Abogados\n"
+                . "APP_URL={$input['app_url']}\n"
+                . "APP_ENV=production\n"
+                . "APP_DEBUG=0\n"
+                . "APP_KEY={$appKey}\n"
+                . "DB_HOST={$input['db_host']}\n"
+                . "DB_PORT={$input['db_port']}\n"
+                . "DB_NAME={$input['db_name']}\n"
+                . "DB_USER={$input['db_user']}\n"
+                . "DB_PASS={$input['db_pass']}\n"
+                . "OPENROUTER_API_KEY=\n"
+                . "OPENROUTER_MODEL=openai/gpt-4o-mini\n";
 
-            echo 'Instalación completada. <a href="/login">Ir al login</a>';
+            file_put_contents(base_path('.env'), $env);
+            @chmod(base_path('.env'), 0600);
+            file_put_contents(base_path('install.lock'), 'installed:' . date('c'));
+            @chmod(base_path('install.lock'), 0640);
+
+            flash('success', 'Instalación completada. Inicia sesión como administrador.');
+            redirect('/login');
         } catch (Throwable $e) {
-            flash('error', 'Error de instalación: ' . $e->getMessage());
+            flash('error', 'Error de instalación. Revisa credenciales de DB y permisos de escritura.');
             $_SESSION['_old'] = $input;
             redirect('/install');
         }
@@ -137,11 +156,13 @@ final class InstallController extends Controller
         if (!filter_var($data['admin_email'], FILTER_VALIDATE_EMAIL)
             || strlen($data['admin_pass']) < 8
             || !filter_var($data['app_url'], FILTER_VALIDATE_URL)
-            || $data['db_name'] === ''
-            || $data['db_user'] === '') {
-            flash('error', 'Validación fallida. Verifique URL, email, contraseña (mínimo 8) y credenciales DB.');
-            $_SESSION['_old'] = $data;
-            redirect('/install');
+            || $data['db_host'] === '' || $data['db_name'] === '' || $data['db_user'] === ''
+        ) {
+            throw new \InvalidArgumentException('Datos de instalación inválidos.');
+        }
+
+        if (!ctype_digit((string) $data['db_port'])) {
+            throw new \InvalidArgumentException('Puerto de DB inválido.');
         }
 
         return $data;

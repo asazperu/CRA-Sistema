@@ -18,6 +18,9 @@ use App\Services\OpenRouterService;
 
 final class ChatController extends Controller
 {
+    private const CHAT_RATE_LIMIT_MESSAGES = 8;
+    private const CHAT_RATE_LIMIT_WINDOW_SECONDS = 60;
+
     public function index(): void
     {
         $user = Auth::user();
@@ -143,6 +146,17 @@ final class ChatController extends Controller
 
         $conversationModel = new Conversation();
         $conversation = $conversationModel->find($conversationId, (int) $user['id']);
+
+        $rate = rate_limit_hit(
+            'chat-message:user:' . (int) $user['id'],
+            self::CHAT_RATE_LIMIT_MESSAGES,
+            self::CHAT_RATE_LIMIT_WINDOW_SECONDS
+        );
+
+        if ($rate['blocked']) {
+            flash('error', 'Rate limit de chat alcanzado. Espere ' . (int) $rate['retry_after'] . ' segundos.');
+            redirect('/chat?id=' . $conversationId);
+        }
 
         if (!$conversation || $content === '') {
             flash('error', 'No se pudo enviar el mensaje.');

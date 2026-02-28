@@ -10,6 +10,9 @@ use App\Models\User;
 
 final class AuthController extends Controller
 {
+    private const LOGIN_RATE_LIMIT_ATTEMPTS = 5;
+    private const LOGIN_RATE_LIMIT_WINDOW_SECONDS = 300;
+
     public function showLogin(): void
     {
         if (Auth::check()) {
@@ -27,6 +30,17 @@ final class AuthController extends Controller
         $password = (string) ($_POST['password'] ?? '');
 
         $_SESSION['_old'] = ['email' => $email];
+
+        $rate = rate_limit_hit(
+            'login:' . sha1(strtolower($email) . '|' . client_ip()),
+            self::LOGIN_RATE_LIMIT_ATTEMPTS,
+            self::LOGIN_RATE_LIMIT_WINDOW_SECONDS
+        );
+
+        if ($rate['blocked']) {
+            flash('error', 'Demasiados intentos de login. Intente nuevamente en ' . (int) $rate['retry_after'] . ' segundos.');
+            redirect('/login');
+        }
 
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($password) < 8) {
             flash('error', 'Datos inválidos.');

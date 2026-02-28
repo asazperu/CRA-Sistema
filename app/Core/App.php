@@ -34,13 +34,20 @@ final class App
         }
 
         Config::load(self::$basePath);
+        ErrorHandler::register();
         date_default_timezone_set(config('app.timezone', 'America/Lima'));
 
-        if (!$installMode && !is_file(self::$basePath . '/install.lock')) {
-            $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+        $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+        $installLock = is_file(self::$basePath . '/install.lock');
+
+        if (!$installMode && !$installLock) {
             if (!in_array($path, ['/install', '/install.php'], true)) {
                 redirect('/install');
             }
+        }
+
+        if ($installLock && in_array($path, ['/install', '/install.php'], true)) {
+            redirect('/login');
         }
     }
 
@@ -94,9 +101,11 @@ final class App
         $router->post('/admin/users/reset-password', [DashboardController::class, 'resetUserPassword'], ['auth', 'role:ADMIN']);
         $router->post('/admin/users/toggle-status', [DashboardController::class, 'toggleUserStatus'], ['auth', 'role:ADMIN']);
 
-        $router->get('/install', [InstallController::class, 'index']);
-        $router->post('/install', [InstallController::class, 'store']);
-        $router->post('/install/test-connection', [InstallController::class, 'testConnection']);
+        if (!is_file(self::$basePath . '/install.lock')) {
+            $router->get('/install', [InstallController::class, 'index']);
+            $router->post('/install', [InstallController::class, 'store']);
+            $router->post('/install/test-connection', [InstallController::class, 'testConnection']);
+        }
 
         $router->dispatch($method, $path);
 

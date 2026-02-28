@@ -1,83 +1,71 @@
 # Castro Romero Abogados (Base MVC PHP 8+)
 
-Base funcional lista para subir a HostGator/cPanel.
+Base funcional lista para despliegue en HostGator/cPanel.
 
-## Incluye
-- `public/index.php` como front controller.
-- Rewrite con `.htaccess` para rutas limpias (`/login`, `/chat`, `/install`, `/documentos`).
-- Router liviano.
-- PDO + prepared statements.
-- Sesiones seguras + `password_hash()/password_verify()`.
-- CSRF + validación server-side + sanitización XSS.
-- Middlewares `Auth` y `RoleGuard`.
-- Login / logout / cambio de contraseña.
-- Roles: `ADMIN` y `USER`.
-- Chat con OpenRouter (modo normal + streaming opcional).
-- Historial de chats (crear/renombrar/borrar).
-- Módulo Eventos con:
-  - creación de evento desde chat (modal),
-  - almacenamiento por usuario en `events`,
-  - vista de lista/calendario mensual,
-  - exportación opcional `.ics`.
-- Mensajes persistidos en MySQL y logs de uso en `api_usage_logs`.
-- Enriquecimiento previo a OpenRouter con documentos/chunks relevantes + banderas en `flags` y corrida en `analysis_runs`.
-- Panel ADMIN con marca, IA, CRUD de usuarios, `audit_logs` y consumo.
-- Módulo KB: carga de documentos legales (texto+tags+fuente), búsqueda keyword, y uso en chat como segunda prioridad.
-- Módulo Documentos con:
-  - procesamiento asíncrono de `pending` vía `cli/worker.php` (cron),
-  - alternativa manual "Procesar ahora" con rate limit por usuario,
-  - carpeta física fuera de `public/` (`storage/documentos`),
-  - upload/list/download/delete/reprocess,
-  - validación MIME real y tamaño,
-  - renombrado UUID,
-  - permisos por usuario,
-  - auditoría de acciones.
-  - parseo de contenido (PDF/DOCX) y chunking a `document_texts` (800–1500 chars),
-  - detección de PDF escaneado (texto vacío) con advertencia de OCR si no hay binarios.
+## Seguridad y operación (resumen)
+- Rate limit en login (5 intentos / 5 min por email+IP).
+- Rate limit en chat (8 mensajes / 60s por usuario).
+- Manejo de errores centralizado (handler global para web/CLI).
+- Secretos fuera del código: `.env` (`DB_*`, `OPENROUTER_API_KEY`, `APP_KEY`).
+- Instalador bloqueado después de completar (`install.lock`).
 
-## Configuración OpenRouter
-Agrega en `.env` después de instalar:
+## Paso a paso de instalación (cPanel)
+
+### 1) Crear base de datos y usuario en cPanel
+1. Ir a **cPanel > MySQL Databases**.
+2. Crear una base de datos (ejemplo: `cpaneluser_cra`).
+3. Crear un usuario MySQL (ejemplo: `cpaneluser_crausr`).
+4. Asignar el usuario a la base con **ALL PRIVILEGES**.
+5. Guardar host (normalmente `localhost`), puerto (`3306`), nombre BD, usuario y contraseña.
+
+### 2) Subir archivos del proyecto
+1. Subir todo el proyecto al hosting (File Manager o FTP).
+2. Asegurar que el dominio/subdominio apunte a `public/`.
+3. Verificar permisos de escritura para raíz del proyecto (para crear `.env` e `install.lock`).
+
+### 3) Configurar `.env`
+Puedes dejar que el instalador lo genere automáticamente o crearlo manualmente con:
 
 ```env
-OPENROUTER_API_KEY=tu_api_key
+APP_NAME=Castro Romero Abogados
+APP_URL=https://tu-dominio.com
+APP_ENV=production
+APP_DEBUG=0
+APP_KEY=generar_un_valor_aleatorio_largo
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=tu_bd
+DB_USER=tu_usuario
+DB_PASS=tu_password
+OPENROUTER_API_KEY=
 OPENROUTER_MODEL=openai/gpt-4o-mini
 ```
 
-## Instalación en HostGator (cPanel)
-1. En **cPanel > MySQL Databases**, crea una **base de datos** y un **usuario** MySQL.
-2. Asigna el usuario a la base con permisos completos.
-3. Sube el proyecto al hosting (dominio o subdominio).
-4. Asegura que el sitio apunte a `public/` (o usa el `.htaccess` raíz incluido).
-5. Abre `https://tu-dominio.com/install`.
-6. En `/install`:
-   - ingresa `host`, `usuario`, `password` y `nombre de BD` (ya creada),
-   - usa **Probar conexión MySQL**,
-   - ejecuta **Instalar ahora**.
+> Nunca subas `.env` al repositorio.
 
-## Qué hace `/install`
-- Prueba la conexión MySQL.
-- Ejecuta `database.sql` automáticamente.
-- Crea el usuario `ADMIN` inicial.
-- Inicializa settings de marca e IA (incluye system prompt legal por defecto).
-- Guarda configuración en `.env` (fuera de `public/`).
-- Crea `install.lock` y bloquea re-ejecución.
+### 4) Ejecutar `/install`
+1. Abrir `https://tu-dominio.com/install`.
+2. Completar formulario DB + admin inicial.
+3. Usar **Probar conexión MySQL**.
+4. Ejecutar **Instalar ahora**.
+5. El instalador importa `database.sql`, crea admin, guarda `.env`, y crea `install.lock`.
 
-## Importante
-La app **no crea físicamente la base de datos** en hosting; usa la que tú creas en cPanel/phpMyAdmin.
+### 5) Entrar como admin
+1. Ir a `https://tu-dominio.com/login`.
+2. Iniciar sesión con el admin creado.
 
-
-## KB en respuestas de chat
-El chat primero usa documentos del caso y luego KB como segunda prioridad.
-La interfaz muestra “Fuentes KB usadas” por título cuando se emplean fragmentos de KB.
-
+### 6) Configurar OpenRouter y marca
+1. En `.env`, establecer `OPENROUTER_API_KEY`.
+2. En panel admin, ajustar modelo/temperatura/tokens.
+3. Configurar marca: nombre, logo y colores.
 
 ## Worker de documentos (cron HostGator)
 - Script: `php cli/worker.php --limit=10`
-- Objetivo: procesar documentos en estado `pending` (extraer texto, resumir e indexar chunks en `document_texts`).
-- Cron sugerido en cPanel (cada 5 minutos):
+- Procesa documentos `pending` (extraer texto, resumir, indexar chunks).
+- Cron sugerido cada 5 minutos:
 
 ```cron
 */5 * * * * /usr/local/bin/php /home/USUARIO/public_html/tu-app/cli/worker.php --limit=10 >> /home/USUARIO/worker_docs.log 2>&1
 ```
 
-También puedes lanzar procesamiento manual desde `/documentos` con **Procesar ahora** (aplica rate limit por usuario).
+También existe alternativa manual en `/documentos` con **Procesar ahora** (rate limit por usuario).
