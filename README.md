@@ -4,7 +4,7 @@ Base funcional lista para subir a HostGator/cPanel.
 
 ## Incluye
 - `public/index.php` como front controller.
-- Rewrite con `.htaccess` para rutas limpias (`/login`, `/chat`, `/install`).
+- Rewrite con `.htaccess` para rutas limpias (`/login`, `/chat`, `/install`, `/documentos`).
 - Router liviano.
 - PDO + prepared statements.
 - Sesiones seguras + `password_hash()/password_verify()`.
@@ -15,11 +15,14 @@ Base funcional lista para subir a HostGator/cPanel.
 - Chat con OpenRouter (modo normal + streaming opcional).
 - Historial de chats (crear/renombrar/borrar).
 - Mensajes persistidos en MySQL y logs de uso en `api_usage_logs`.
-- Panel ADMIN con:
-  - configuración de marca (nombre, logo, colores),
-  - configuración IA (modelo, system prompt, temperatura, max tokens),
-  - CRUD de usuarios (crear, reset pass, activar/desactivar),
-  - vistas de `audit_logs` y `api_usage_logs`.
+- Panel ADMIN con marca, IA, CRUD de usuarios, `audit_logs` y consumo.
+- Módulo Documentos con:
+  - carpeta física fuera de `public/` (`storage/documentos`),
+  - upload/list/download/delete/reprocess,
+  - validación MIME real y tamaño,
+  - renombrado UUID,
+  - permisos por usuario,
+  - auditoría de acciones.
 
 ## Configuración OpenRouter
 Agrega en `.env` después de instalar:

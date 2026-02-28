@@ -106,6 +106,8 @@ CREATE TABLE IF NOT EXISTS documents (
   size_bytes BIGINT UNSIGNED NOT NULL,
   checksum_sha256 CHAR(64) NULL,
   storage_path VARCHAR(255) NOT NULL,
+  processing_status ENUM('pending','processed','failed') NOT NULL DEFAULT 'pending',
+  processed_at DATETIME NULL,
   uploaded_at DATETIME NOT NULL,
   KEY idx_documents_user_uploaded (user_id, uploaded_at),
   KEY idx_documents_conversation (conversation_id),

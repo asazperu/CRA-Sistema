@@ -4,6 +4,7 @@
         <p>Rol: <?= e($user['role'] ?? 'USER') ?></p>
         <p>Use el asistente legal para consultas rápidas de estrategia procesal peruana.</p>
         <a class="btn" href="/chat">Abrir Asistente IA</a>
+        <a class="btn" href="/documentos">Módulo Documentos</a>
         <a class="btn" href="/password/change">Cambiar contraseña</a>
         <?php if (($user['role'] ?? '') === 'ADMIN'): ?>
             <a class="btn" href="/admin">Panel Admin</a>

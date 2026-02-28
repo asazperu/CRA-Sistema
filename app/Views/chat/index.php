@@ -24,6 +24,7 @@
                 </div>
             <?php endforeach; ?>
         </nav>
+        <a class="btn" href="/documentos" style="width:100%;text-align:center;">Módulo Documentos</a>
         <form method="post" action="/logout">
             <?= csrf_field() ?>
             <button type="submit" class="logout">Salir</button>
