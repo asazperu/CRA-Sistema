@@ -34,8 +34,11 @@ final class App
         Config::load(self::$basePath);
         date_default_timezone_set(config('app.timezone', 'America/Lima'));
 
-        if (!$installMode && !is_file(self::$basePath . '/install.lock') && !str_contains($_SERVER['REQUEST_URI'] ?? '', 'install.php')) {
-            redirect('/install.php');
+        if (!$installMode && !is_file(self::$basePath . '/install.lock')) {
+            $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+            if (!in_array($path, ['/install', '/install.php'], true)) {
+                redirect('/install');
+            }
         }
     }
 
@@ -71,6 +74,7 @@ final class App
 
         $router->get('/install', [InstallController::class, 'index']);
         $router->post('/install', [InstallController::class, 'store']);
+        $router->post('/install/test-connection', [InstallController::class, 'testConnection']);
 
         $router->dispatch($method, $path);
 

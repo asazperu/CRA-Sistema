@@ -1,24 +1,35 @@
 # Castro Romero Abogados (Base MVC PHP 8+)
 
-Base funcional lista para HostGator/cPanel con:
-- Front controller (`public/index.php`) + rewrite (`.htaccess`)
-- Router liviano
-- PDO + prepared statements
-- Sesiones seguras + `password_hash()`
-- CSRF + validación server-side + sanitización XSS
-- Middleware `Auth` y `RoleGuard`
-- Login / logout / cambio de contraseña
-- Roles: `ADMIN` y `USER`
-- Instalador web (`install.php`) que importa `database.sql`, crea admin, escribe `.env` y genera `install.lock`
+Base funcional lista para subir a HostGator/cPanel.
 
-## Instalación
-1. Crear BD y usuario en cPanel/phpMyAdmin.
-2. Subir archivos al hosting.
-3. Apuntar dominio a `public/` (o dejar `.htaccess` raíz).
-4. Abrir `/install.php` y completar datos.
-5. Ingresar por `/login` con el admin creado.
+## Incluye
+- `public/index.php` como front controller.
+- Rewrite con `.htaccess` para rutas limpias (`/login`, `/chat`, `/install`).
+- Router liviano.
+- PDO + prepared statements.
+- Sesiones seguras + `password_hash()/password_verify()`.
+- CSRF + validación server-side + sanitización XSS.
+- Middlewares `Auth` y `RoleGuard`.
+- Login / logout / cambio de contraseña.
+- Roles: `ADMIN` y `USER`.
 
-## Estructura pedida
-- Árbol MVC: `documentos/01-arbol-mvc.md`
-- Mapa endpoints: `documentos/02-mapa-rutas.md`
-- Esquema MySQL: `database.sql` y `documentos/03-esquema-mysql.md`
+## Instalación en HostGator (cPanel)
+1. En **cPanel > MySQL Databases**, crea una **base de datos** y un **usuario** MySQL.
+2. Asigna el usuario a la base con permisos completos.
+3. Sube el proyecto al hosting (dominio o subdominio).
+4. Asegura que el sitio apunte a `public/` (o usa el `.htaccess` raíz incluido).
+5. Abre `https://tu-dominio.com/install`.
+6. En `/install`:
+   - ingresa `host`, `usuario`, `password` y `nombre de BD` (ya creada),
+   - usa **Probar conexión MySQL**,
+   - ejecuta **Instalar ahora**.
+
+## Qué hace `/install`
+- Prueba la conexión MySQL.
+- Ejecuta `database.sql` automáticamente.
+- Crea el usuario `ADMIN` inicial.
+- Guarda configuración en `.env` (fuera de `public/`).
+- Crea `install.lock` y bloquea re-ejecución.
+
+## Importante
+La app **no crea físicamente la base de datos** en hosting; usa la que tú creas en cPanel/phpMyAdmin.
