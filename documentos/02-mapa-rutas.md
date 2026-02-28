@@ -38,6 +38,7 @@
 - `GET /documentos/{id}` *(planeado)*.
 - `GET /documentos/{id}/download` *(planeado)*.
 - `DELETE /documentos/{id}` *(planeado)*.
+- `POST /documentos/process-now` -> procesamiento manual de `pending` con rate limit.
 
 ## Export
 - `POST /export/chat/{id}.pdf` *(planeado)*.

@@ -24,6 +24,8 @@ Base funcional lista para subir a HostGator/cPanel.
 - Panel ADMIN con marca, IA, CRUD de usuarios, `audit_logs` y consumo.
 - Módulo KB: carga de documentos legales (texto+tags+fuente), búsqueda keyword, y uso en chat como segunda prioridad.
 - Módulo Documentos con:
+  - procesamiento asíncrono de `pending` vía `cli/worker.php` (cron),
+  - alternativa manual "Procesar ahora" con rate limit por usuario,
   - carpeta física fuera de `public/` (`storage/documentos`),
   - upload/list/download/delete/reprocess,
   - validación MIME real y tamaño,
@@ -67,3 +69,15 @@ La app **no crea físicamente la base de datos** en hosting; usa la que tú crea
 ## KB en respuestas de chat
 El chat primero usa documentos del caso y luego KB como segunda prioridad.
 La interfaz muestra “Fuentes KB usadas” por título cuando se emplean fragmentos de KB.
+
+
+## Worker de documentos (cron HostGator)
+- Script: `php cli/worker.php --limit=10`
+- Objetivo: procesar documentos en estado `pending` (extraer texto, resumir e indexar chunks en `document_texts`).
+- Cron sugerido en cPanel (cada 5 minutos):
+
+```cron
+*/5 * * * * /usr/local/bin/php /home/USUARIO/public_html/tu-app/cli/worker.php --limit=10 >> /home/USUARIO/worker_docs.log 2>&1
+```
+
+También puedes lanzar procesamiento manual desde `/documentos` con **Procesar ahora** (aplica rate limit por usuario).

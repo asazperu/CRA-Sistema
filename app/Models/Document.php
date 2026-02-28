@@ -34,6 +34,24 @@ final class Document
         return (int) Database::connection()->lastInsertId();
     }
 
+
+    public function pending(int $limit = 10, ?int $userId = null): array
+    {
+        $sql = 'SELECT * FROM documents WHERE processing_status = :status';
+        $params = ['status' => 'pending'];
+
+        if ($userId !== null) {
+            $sql .= ' AND user_id = :user_id';
+            $params['user_id'] = $userId;
+        }
+
+        $sql .= ' ORDER BY uploaded_at ASC LIMIT ' . (int) $limit;
+
+        $stmt = Database::connection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll() ?: [];
+    }
+
     public function findByIdForUser(int $id, int $userId): ?array
     {
         $stmt = Database::connection()->prepare('SELECT * FROM documents WHERE id=:id AND user_id=:user_id LIMIT 1');

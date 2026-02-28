@@ -17,6 +17,12 @@
             <button type="submit">Subir documento</button>
         </form>
 
+        <form method="post" action="/documentos/process-now" style="margin-top:12px;">
+            <?= csrf_field() ?>
+            <button type="submit">Procesar ahora (manual)</button>
+            <small style="display:block;color:#9da8d7;margin-top:6px;">Rate limit: 1 solicitud cada <?= (int) ($processNowRateLimitSeconds ?? 120) ?>s por usuario.</small>
+        </form>
+
         <div style="margin-top:16px; overflow:auto;">
             <table style="width:100%; border-collapse: collapse;">
                 <thead><tr><th>ID</th><th>Nombre</th><th>MIME</th><th>Tamaño</th><th>Estado</th><th>Aviso</th><th>Acciones</th></tr></thead>
@@ -34,7 +40,7 @@
                             <form method="post" action="/documentos/reprocess" style="display:inline-block;">
                                 <?= csrf_field() ?>
                                 <input type="hidden" name="id" value="<?= (int) $d['id'] ?>">
-                                <button type="submit">Reprocesar</button>
+                                <button type="submit">Marcar pending</button>
                             </form>
                             <form method="post" action="/documentos/delete" style="display:inline-block;">
                                 <?= csrf_field() ?>

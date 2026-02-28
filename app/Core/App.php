@@ -80,6 +80,7 @@ final class App
         $router->get('/documentos/download', [DocumentController::class, 'download'], ['auth']);
         $router->post('/documentos/delete', [DocumentController::class, 'delete'], ['auth']);
         $router->post('/documentos/reprocess', [DocumentController::class, 'reprocess'], ['auth']);
+        $router->post('/documentos/process-now', [DocumentController::class, 'processNow'], ['auth']);
 
         $router->get('/eventos', [EventController::class, 'index'], ['auth']);
         $router->post('/eventos/create', [EventController::class, 'create'], ['auth']);

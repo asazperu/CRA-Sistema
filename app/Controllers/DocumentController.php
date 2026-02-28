@@ -8,8 +8,7 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Models\AuditLog;
 use App\Models\Document;
-use App\Models\DocumentText;
-use App\Services\DocumentParseService;
+use App\Services\DocumentProcessingService;
 
 final class DocumentController extends Controller
 {
@@ -18,6 +17,7 @@ final class DocumentController extends Controller
         'application/pdf' => 'pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
     ];
+    private const PROCESS_NOW_RATE_LIMIT_SECONDS = 120;
 
     public function index(): void
     {
@@ -28,6 +28,7 @@ final class DocumentController extends Controller
             'title' => 'Documentos',
             'user' => $user,
             'documents' => $documents,
+            'processNowRateLimitSeconds' => self::PROCESS_NOW_RATE_LIMIT_SECONDS,
         ]);
     }
 
@@ -93,23 +94,51 @@ final class DocumentController extends Controller
             'processing_status' => 'pending',
         ]);
 
-        $parseResult = (new DocumentParseService())->parse($destination, $mime);
-        (new DocumentText())->replaceChunks($docId, $parseResult['chunks']);
-        $warning = count($parseResult['warnings']) > 0 ? implode(' | ', $parseResult['warnings']) : null;
-        $model->updateProcessingResult($docId, (int) $user['id'], $parseResult['status'], $warning);
-
         $this->audit('document_upload', 'documents', $docId, [
             'name' => $originalName,
             'mime' => $mime,
-            'chunks' => count($parseResult['chunks']),
-            'status' => $parseResult['status'],
+            'status' => 'pending',
         ]);
 
-        if ($warning) {
-            flash('error', $warning);
-        } else {
-            flash('success', 'Documento subido y procesado correctamente.');
+        flash('success', 'Documento subido. Quedó en cola con estado pending para procesamiento por worker/cron.');
+        redirect('/documentos');
+    }
+
+    public function processNow(): void
+    {
+        verify_csrf();
+        $user = Auth::user();
+
+        $key = 'document_process_now_last_' . (int) $user['id'];
+        $lastAt = (int) ($_SESSION[$key] ?? 0);
+        $now = time();
+
+        if ($lastAt > 0 && ($now - $lastAt) < self::PROCESS_NOW_RATE_LIMIT_SECONDS) {
+            $wait = self::PROCESS_NOW_RATE_LIMIT_SECONDS - ($now - $lastAt);
+            flash('error', 'Rate limit activo. Espere ' . $wait . ' segundos para volver a usar "Procesar ahora".');
+            redirect('/documentos');
         }
+
+        $summary = (new DocumentProcessingService())->processPending(3, (int) $user['id']);
+        $_SESSION[$key] = $now;
+
+        $this->audit('document_process_now', 'documents', null, [
+            'scanned' => $summary['scanned'],
+            'processed' => $summary['processed'],
+            'errors' => $summary['errors'],
+        ]);
+
+        if ((int) $summary['scanned'] === 0) {
+            flash('success', 'No había documentos pending para procesar.');
+            redirect('/documentos');
+        }
+
+        if ((int) $summary['errors'] > 0) {
+            flash('error', 'Procesamiento manual completado con errores. Procesados: ' . $summary['processed'] . ', errores: ' . $summary['errors']);
+        } else {
+            flash('success', 'Procesamiento manual completado. Procesados: ' . $summary['processed']);
+        }
+
         redirect('/documentos');
     }
 
@@ -180,23 +209,11 @@ final class DocumentController extends Controller
 
         $model->reprocess($id, (int) $user['id'], 'pending');
 
-        $absolute = base_path((string) $document['storage_path']);
-        $result = (new DocumentParseService())->parse($absolute, (string) $document['mime_type']);
-        (new DocumentText())->replaceChunks($id, $result['chunks']);
-        $warning = count($result['warnings']) > 0 ? implode(' | ', $result['warnings']) : null;
-        $model->updateProcessingResult($id, (int) $user['id'], $result['status'], $warning);
-
         $this->audit('document_reprocess', 'documents', $id, [
-            'status' => $result['status'],
-            'chunks' => count($result['chunks']),
+            'status' => 'pending',
         ]);
 
-        if ($warning) {
-            flash('error', $warning);
-        } else {
-            flash('success', 'Documento reprocesado correctamente.');
-        }
-
+        flash('success', 'Documento marcado como pending para ser procesado por worker/cron.');
         redirect('/documentos');
     }
 
